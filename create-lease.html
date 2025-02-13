@@ -1,0 +1,110 @@
+<script type="text/html" data-template-name="create-lease">
+    <div class="form-row">
+        <label for="node-input-url"><i class="fa fa-link"></i> URL</label>
+        <input type="text" id="node-input-url" placeholder="Enter the request URL">
+    </div>
+    <div class="form-row">
+        <label for="node-input-oauth2"><i class="fa fa-lock"></i> OAuth2 Config</label>
+        <select type="config" id="node-input-oauth2" data-node-type="oauth2-authorization"></select>
+    </div>
+    <div class="form-row">
+        <label for="node-input-action"><i class="fa fa-tasks"></i> Action</label>
+        <select id="node-input-action" onchange="toggleFields()">
+            <option value="" disabled selected>Select an action...</option>
+            <option value="acquire">Create a lease</option>
+            <option value="change">Change a lease</option>
+            <option value="break">Break a lease</option>
+            <option value="renew">Renew a lease</option>
+            <option value="release">Release a lease</option>
+        </select>
+    </div>
+    <div class="form-row" id="leaseid" style="display: none;">
+        <label for="node-input-leaseid"><i class="fa fa-keyboard"></i> Lease Id</label>
+        <input type="text" id="node-input-leaseid" placeholder="Enter the Lease ID">
+    </div>
+    <div class="form-row" id="leaseduration" style="display: none;">
+        <label for="node-input-leaseduration"><i class="fa fa-clock"></i> Lease Duration</label>
+        <input type="text" id="node-input-leaseduration" placeholder="Enter the Lease Duration">
+    </div>
+    <div class="form-row" id="leaseidnew" style="display: none;">
+        <label for="node-input-leaseidnew"><i class="fa fa-keyboard"></i> New Lease Id</label>
+        <input type="text" id="node-input-leaseidnew">
+    </div>
+    <div class="form-tips">
+        The URL can be user-defined or provided dynamically via the <code>msg.payload.url</code>.
+        The OAuth2 Config should be selected to authorize the request using the access token.
+        The Select an action dropdown allows you to choose the action to perform on the lease.
+    </div>
+</script>
+<script type="text/javascript">
+
+function toggleFields() {
+    var action = document.getElementById("node-input-action").value;
+    var leaseId = document.getElementById("leaseid");
+    var leaseIdNew = document.getElementById("leaseidnew");
+    var leaseDuration = document.getElementById("leaseduration");
+
+
+    leaseId.style.display = "none";
+    leaseIdNew.style.display = "none";
+    leaseDuration.style.display = "none";
+
+    if (action === "acquire") {
+        leaseDuration.style.display = "block";
+    } else if (action === "renew") {
+        leaseId.style.display = "block";
+        leaseDuration.style.display = "block";
+    } else if (action === "release") {
+        leaseId.style.display = "block";
+    } else if (action === "change") {
+        leaseId.style.display = "block";
+        leaseDuration.style.display = "block";
+        leaseIdNew.style.display = "block";
+    }
+
+    var actionLabels = {
+        acquire: "ACQUIRE lease",
+        change: "CHANGE lease",
+        break: "BREAK lease",
+        renew: "RENEW lease",
+        release: "RELEASE lease"
+    };
+
+    var newLabel = actionLabels[action] || "CREATE lease";
+
+    $("#node-input-name").val(newLabel).trigger("change");
+}
+
+RED.nodes.registerType('create-lease', {
+    category: 'data plane',
+    color: '#a6bbcf',
+    defaults: {
+        url: { value: '' },
+        oauth2: { type: 'oauth2-authorization', value: '' },
+        action: { value: '' },
+        filePath: { value: '' },
+        overwrite: { value: false },
+        leaseduration: { value: '' },
+        leaseid: { value: '' },
+        leaseidnew: { value: '' },
+        name: { value: "CREATE lease" } 
+    },
+    inputs: 1,
+    outputs: 1,
+    icon: 'file.png',
+    label: function () {
+        var actionLabels = {
+            acquire: "CREATE lease",
+            change: "CHANGE lease",
+            break: "BREAK lease",
+            renew: "RENEW lease",
+            release: "RELEASE lease"
+        };
+        return actionLabels[this.action] || "CREATE lease";
+    }
+});
+
+</script>
+<script type="text/html" data-help-name="create-lease">
+    <p>A node that manages leases by performing actions such as acquiring, renewing, changing, breaking, or releasing leases.</p>
+</script>

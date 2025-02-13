@@ -1,0 +1,128 @@
+<script type="text/html" data-template-name="data-requests">
+    <div class="form-row">
+        <label for="node-input-url"><i class="fa fa-link"></i> URL</label>
+        <input type="text" id="node-input-url" placeholder="Enter the request URL">
+    </div>
+    <div class="form-row">
+        <label for="node-input-oauth2"><i class="fa fa-lock"></i> OAuth2 Config</label>
+        <select type="config" id="node-input-oauth2" data-node-type="oauth2-authorization"></select>
+    </div>
+    <div class="form-row">
+        <label for="node-input-action"><i class="fa fa-tasks"></i> Action</label>
+        <select id="node-input-action" onchange="toggleFieldsData()">
+            <option value="" disabled selected>Select an action...</option>
+            <option value="create">Create a file</option>
+            <option value="update">Update a file</option>
+            <option value="delete">Delete a file</option>
+            <option value="read">Read a file</option>
+            <option value="list">List paths in a file</option>
+            <option value="getproperties">Get properties for a file</option>
+        </select>
+    </div>
+    <div class="form-row" id="filePathRow" style="display: none;">
+        <label for="node-input-filePath"><i class="fa fa-file"></i> File Path</label>
+        <input type="text" id="node-input-filePath" placeholder="Enter the file path for request body">
+    </div>
+    <div class="form-row" id="overwriteRow" style="display: none;">
+        <label for="node-input-overwrite"><i class="fa fa-refresh"></i> Overwrite File</label>
+        <input type="checkbox" id="node-input-overwrite">
+    </div>
+    <div class="form-row" id="maxResults" style="display: none;">
+        <label for="node-input-maxResults"><i class="fa fa-refresh"></i> Max Results</label>
+        <input type="number" id="node-input-maxResults">
+    </div>
+    <div class="form-row" id="recursive" style="display: none;">
+        <label for="node-input-recursive"><i class="fa fa-refresh"></i> Recursive</label>
+        <input type="checkbox" id="node-input-recursive">
+    </div>
+    <div class="form-tips">
+        The URL can be user-defined or provided dynamically via the <code>msg.payload.url</code>.
+        The OAuth2 Config should be selected to authorize the request using the access token.
+        The Select an action dropdown allows you to choose the action to perform on the file.
+    </div>
+</script>
+<script type="text/javascript">
+    function toggleFieldsData() {
+    var actionElement = document.getElementById("node-input-action");
+
+    var action = actionElement.value;
+    var filePathField = document.getElementById("filePathRow");
+    var overwriteField = document.getElementById("overwriteRow");
+    var maxResultsField = document.getElementById("maxResults");
+    var recursiveField = document.getElementById("recusrive");
+
+    if (action === "update") {
+        filePathField.style.display = "block";
+        overwriteField.style.display = "block";
+        maxResultsField.style.display = "none";
+        recursiveField.style.display = "none";
+    } else if (action === "list") {
+        maxResultsField.style.display = "block";
+        recursiveField.style.display = "block";
+        filePathField.style.display = "none";
+        overwriteField.style.display = "none";
+    }else{
+        filePathField.style.display = "none";
+        overwriteField.style.display = "none";
+        maxResultsField.style.display = "none";
+        recursiveField.style.display = "none";
+    }
+    var actionLabels = {
+        create: "CREATE file",
+        update: "UPDATE file",
+        delete: "DELETE file",
+        read: "READ file",
+        list: "LIST paths file",
+        getproperties: "GET properties file"
+    };
+
+    var newLabel = actionLabels[action] || "DATA REQUESTS";
+
+    $("#node-input-name").val(newLabel).trigger("change");
+}
+    
+    
+RED.nodes.registerType('data-requests', {
+    category: 'data plane',
+    color: '#a6bbcf',
+    defaults: {
+        url: { value: '' },
+        oauth2: { type: 'oauth2-authorization', value: '' },
+        action: { value: '' },
+        filePath: { value: '' },
+        overwrite: { value: false },
+        maxResults: { value: '' },
+        recursive: { value: false },
+        name: { value: "DATA requests" } 
+    },
+    inputs: 1,
+    outputs: 1,
+    icon: 'file.png',
+    label: function () {
+        var actionLabels = {
+        create: "CREATE file",
+        update: "UPDATE file",
+        delete: "DELETE file",
+        read: "READ file",
+        list: "LIST paths file",
+        getproperties: "GET properties file"
+    };
+        return actionLabels[this.action] || "DATA requests";
+    }
+});
+</script>
+<script type="text/html" data-help-name="data-requests">
+    <p>A node that allows file operations such as creating, updating, deleting, reading, listing paths, or retrieving file properties</p>
+</script>
+
+<style>
+
+    #node-input-overwrite {
+        width: auto;
+        margin: 0;
+    }
+    #node-input-recursive {
+        width: auto;
+        margin: 0;
+    }
+</style>

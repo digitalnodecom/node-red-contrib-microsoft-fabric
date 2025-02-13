@@ -1,0 +1,175 @@
+<script type="text/html" data-template-name="upload-data">
+    <div class="form-row">
+        <label for="node-input-url"><i class="fa fa-link"></i> URL</label>
+        <input type="text" id="node-input-url" placeholder="Enter the request URL">
+    </div>
+    <div class="form-row">
+        <label for="node-input-action"><i class="fa fa-tasks"></i> Action</label>
+        <select id="node-input-action" onchange="toggleFieldsUploadData()">
+            <option value="" disabled selected>Select an action...</option>
+            <option value="read">List tables</option>
+            <option value="upload">Upload a table</option>
+        </select>
+    </div>
+    <div class="form-row">
+        <label for="node-input-oauth2"><i class="fa fa-lock"></i> OAuth2 Config</label>
+        <select type="config" id="node-input-oauth2" data-node-type="oauth2-config"></select>
+    </div>
+    <div class="form-row" id="maxResultsUploadData" style="display: none;">
+        <label for="node-input-maxResultsUploadData"><i class="fa fa-refresh"></i> Max Results</label>
+        <input type="number" id="node-input-maxResultsUploadData">
+    </div>
+    <div class="form-row" id="filePathRow" style="display: none;">
+        <label for="node-input-filePath"><i class="fa fa-file"></i> File Path</label>
+        <input type="text" id="node-input-filePath" placeholder="Enter the file path for request body">
+    </div>
+    <div class="form-row" id="tableName" style="display: none;">
+        <label for="node-input-tableName"><i class="fa fa-file"></i> Table Name</label>
+        <input type="text" id="node-input-tableName" placeholder="Enter the table name">
+    </div>
+    <div class="form-row" id="delimiter" style="display: none;">
+        <label for="node-input-delimiter"><i class="fa fa-refresh"></i> Delimiter</label>
+        <input type="text" id="node-input-delimiter" placeholder="Enter the delimiter">
+    </div>
+    <div class="form-row" id="pathType" style="display: none;">
+        <label for="node-input-pathType"><i class="fa fa-tasks"></i> Path Type</label>
+        <select id="node-input-pathType">
+            <option value="" disabled selected>Select a Path Type...</option>
+            <option value="File">File</option>
+            <option value="Folder">Folder</option>
+        </select>
+    </div>
+    <div class="form-row" id="modeType" style="display: none;">
+        <label for="node-input-modeType"><i class="fa fa-tasks"></i> Mode Type</label>
+        <select id="node-input-modeType">
+            <option value="" disabled selected>Choose a mode...</option>
+            <option value="overwrite">Overwrite</option>
+            <option value="append">Append</option>
+        </select>
+    </div>
+    <div class="form-row" id="formatTypeRow" style="display: none;">
+        <label for="node-input-formatType"><i class="fa fa-tasks"></i> Mode Type</label>
+        <select id="node-input-formatType" onchange="toggleFieldsFormatType()">
+            <option value="" disabled selected>Choose a format...</option>
+            <option value="CSV">CSV</option>
+            <option value="parquet">Parquet</option>
+        </select>
+    </div>
+    
+    <div class="form-row" id="headerRow" style="display: none;">
+        <label for="node-input-headerRow"><i class="fa fa-refresh"></i> Header</label>
+        <input type="checkbox" id="node-input-headerRow">
+    </div>
+  
+    <div class="form-tips">
+        The URL can be user-defined or provided dynamically via the <code>msg.payload.url</code>.
+        The Request Body can be specified in the node or provided via <code>msg.payload.requestBody</code>.
+        The OAuth2 Config should be selected to authorize the request using the access token.
+    </div>
+
+</script>
+
+<script type="text/javascript"> 
+    
+    function toggleFieldsFormatType() {
+    var formatTypeElement = document.getElementById("node-input-formatType"); 
+    var actionElement = document.getElementById("node-input-action");
+
+    var headerRow = document.getElementById("headerRow");
+    var delimiter = document.getElementById("delimiter");
+    var tableName = document.getElementById("tableName");
+     
+
+    if (formatTypeElement.value === "CSV" && actionElement.value ==="upload") {
+        headerRow.style.display = "block";
+        delimiter.style.display = "block";
+        tableName.style.display = "block";
+    } else {
+        headerRow.style.display = "none";
+        delimiter.style.display = "none";
+        tableName.style.display = "none";
+    }
+}
+
+    function toggleFieldsUploadData() {
+    var actionElement = document.getElementById("node-input-action");
+
+    var action = actionElement.value;
+    var maxResultsUploadData = document.getElementById("maxResultsUploadData");
+    var filePathRow = document.getElementById("filePathRow");
+    var pathType = document.getElementById("pathType");
+    var modeType = document.getElementById("modeType");
+    var formatType = document.getElementById("formatTypeRow");
+    var headerRow = document.getElementById("headerRow");
+    var delimiter = document.getElementById("delimiter");
+    var tableName = document.getElementById("tableName");
+
+
+    if (action === "read") {
+        maxResultsUploadData.style.display = "block";
+        filePathRow.style.display = "none";
+        pathType.style.display = "none";
+        modeType.style.display = "none";
+        formatType.style.display = "none";
+        headerRow.style.display = "none";
+        delimiter.style.display = "none";
+        tableName.style.display = "none";
+    }
+    else if(action === "upload") {
+        maxResultsUploadData.style.display = "none";
+        filePathRow.style.display = "block";
+        pathType.style.display = "block";
+        modeType.style.display = "block";
+        formatType.style.display = "block";
+        tableName.style.display = "block";
+    }
+    var actionLabels = {
+        read: "List tables",
+        upload: "UPLOAD table"
+    };
+
+    var newLabel = actionLabels[action] || "upload-data";
+
+    $("#node-input-name").val(newLabel).trigger("change");
+}
+    RED.nodes.registerType('upload-data', {
+        category: 'data plane',
+        color: '#a6bbcf',
+        defaults: {
+            url: { value: '' },
+            oauth2: { type: 'oauth2-authorization', value: '' },
+            action: { value: '' },
+            maxResultsUploadData: { value: '' },
+            filePath: { value: '' },
+            pathType: { value: '' },
+            modeType: { value: '' },
+            formatType: { value: '' },
+            delimiter: { value: '' },
+            headerRow: { value: false },
+            tableName: { value: ''}
+        },
+        
+        inputs: 1,
+        outputs: 1,
+        icon: 'file.png',
+        label: function () {
+        var actionLabels = {
+        read: "List tables",
+        upload: "UPLOAD table"
+      
+    };
+        return actionLabels[this.action] || "UPLOAD table";
+    }
+          });
+</script>
+<script type="text/html" data-help-name="upload-data">
+    <p>A node that load a file to table</p>
+</script>
+<style>
+
+    #node-input-headerRow {
+        width: auto;
+        margin: 0;
+    }
+   
+</style>

@@ -1,0 +1,55 @@
+
+<script type="text/javascript">
+    RED.nodes.registerType('oauth2-authorization',{
+        category: 'config',
+        color: '#a6bbcf',
+        defaults: {
+            name: {value: ""},
+            clientId: {value: ""},
+            clientSecret: {value: ""},
+            redirectUri: {value: ""},
+            authURL: {value: ""},
+            tokenURL: {value: ""},
+            scopes: {value: ""}
+        },
+        inputs:1,
+        outputs:1,
+        icon: "file.png",
+        label: function() {
+            return this.name || "OAuth2 Authorization Code";
+        }
+    });
+ </script>
+ 
+ <script type="text/html" data-template-name="oauth2-authorization">
+     <div class="form-row">
+         <label for="node-config-input-name"><i class="fa fa-link"></i> Name</label>
+         <input type="text" id="node-config-input-name" placeholder="Enter the config Name">
+     </div>
+     <div class="form-row">
+         <label for="node-config-input-clientId">Client ID</label>
+         <input type="text" id="node-config-input-clientId" placeholder="Enter Client ID">
+     </div>
+     <div class="form-row">
+         <label for="node-config-input-clientSecret">Client Secret</label>
+         <input type="text" id="node-config-input-clientSecret" placeholder="Enter Client Secret">
+     </div>
+     <div class="form-row">
+        <label for="node-config-input-authURL">Authorization URL</label>
+        <input type="text" id="node-config-input-authURL" placeholder="Enter Authorization URL">
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-tokenURL">Token URL</label>
+        <input type="text" id="node-config-input-tokenURL" placeholder="Enter Token URL">
+    </div>    
+    <div class="form-row">
+        <label for="node-config-input-redirectUri">Redirect URI</label>
+        <input type="text" id="node-config-input-redirectUri" value="http://localhost:1880/oauth2/callback" placeholder="Enter Redirect URI">
+    </div>
+    
+     <div class="form-row">
+         <label for="node-input-scopes">Scopes</label>
+         <input type="text" id="node-config-input-scopes" placeholder="Enter Scopes (e.g., user.read, openid)">
+     </div>    
+ </script>
+ 

@@ -1,0 +1,41 @@
+<script type="text/html" data-template-name="data-automation">
+    <div class="form-row">
+        <label for="node-input-url"><i class="fa fa-link"></i> URL</label>
+        <input type="text" id="node-input-url" placeholder="Enter the request URL">
+    </div>
+    <div class="form-row">
+        <label for="node-input-filePath"><i class="fa fa-file"></i> File Path</label>
+        <input type="text" id="node-input-filePath" placeholder="Enter the file path for request body">
+    </div>
+    <div class="form-row">
+        <label for="node-input-oauth2"><i class="fa fa-lock"></i> OAuth2 Config</label>
+        <select type="config" id="node-input-oauth2" data-node-type="oauth2-config"></select>
+    </div>
+
+    <div class="form-tips">
+        The URL can be user-defined or provided dynamically via the <code>msg.payload.url</code>.<br>
+        The File Path can be specified in the node or provided via <code>msg.payload.filePath</code>.<br>
+        The OAuth2 Config should be selected to authorize the request using the access token.<br>
+    </div>
+</script>
+<script type="text/javascript">
+    RED.nodes.registerType('data-automation', {
+        category: 'data plane',
+        color: '#a6bbcf',
+        defaults: {
+            name: { value: '' },
+            url: { value: '' },
+            filePath: { value: '' },
+            oauth2: { type: 'oauth2-authorization', value: '' },
+        },
+        inputs: 1,
+        outputs: 1,
+        icon: 'file.png',
+        label: function () {
+            return this.name || 'data-automation';
+        }
+    });
+</script>
+<script type="text/html" data-help-name="data-automation">
+    <p>A node that upload a file to Lakehouse</p>
+</script>
