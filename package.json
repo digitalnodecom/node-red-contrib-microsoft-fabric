@@ -1,5 +1,5 @@
 {
-  "name": "node-red-contrib-microsoft-fabric",
+  "name": "@digitalnodecom/node-red-contrib-microsoft-fabric",
   "version": "1.0.0",
   "author": "Bojana Taseva",
   "license": "ISC",
@@ -10,6 +10,10 @@
     "express": "^4.21.0",
     "open": "^7.4.2",
     "yarn": "^1.22.22"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/digitalnodecom/node-red-contrib-microsoft-fabric"
   },
   "node-red": {
     "nodes": {
