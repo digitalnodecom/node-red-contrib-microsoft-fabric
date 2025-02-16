@@ -1,7 +1,6 @@
 const { json } = require('express');
 const axios = require('axios');
 
-
 module.exports = function (RED) {
     function UploadDataNode(config) {
         RED.nodes.createNode(this, config);
