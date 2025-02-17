@@ -23,5 +23,10 @@
       "data-automation": "data-automation.js",
       "upload-data": "upload-data.js"
     }
-  }
+  },
+  "keywords": [
+    "node-red",
+    "microsoft",
+    "fabric",
+    "oauth"]
 }

@@ -14,7 +14,6 @@ module.exports = function (RED) {
         }
 
         node.on('input', async function (msg) {
-
             let accessToken = node.oauth2Config.getAccessToken();
 
             if (!accessToken) {
