@@ -9,7 +9,7 @@
     </div>
     <div class="form-row">
         <label for="node-input-action"><i class="fa fa-tasks"></i> Action</label>
-        <select id="node-input-action" onchange="toggleFieldsData()">
+        <select id="node-input-action" onchange="toggleFieldsDataRequests()">
             <option value="" disabled selected>Select an action...</option>
             <option value="create">Create a file</option>
             <option value="update">Update a file</option>
@@ -42,14 +42,14 @@
     </div>
 </script>
 <script type="text/javascript">
-    function toggleFieldsData() {
+    function toggleFieldsDataRequests() {
     var actionElement = document.getElementById("node-input-action");
 
     var action = actionElement.value;
     var filePathField = document.getElementById("filePathRow");
     var overwriteField = document.getElementById("overwriteRow");
     var maxResultsField = document.getElementById("maxResults");
-    var recursiveField = document.getElementById("recusrive");
+    var recursiveField = document.getElementById("recursive");
 
     if (action === "update") {
         filePathField.style.display = "block";
