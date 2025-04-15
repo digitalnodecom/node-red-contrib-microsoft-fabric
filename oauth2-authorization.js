@@ -3,6 +3,7 @@ const open = require('open');  // Import the 'open' package to open browser
 const axios = require('axios');
 const express = require('express');
 const http = require('http');
+const { URL } = require('url');  // Added to parse redirectUri
 
 module.exports = function(RED) {
     function OAuth2ConfigNode(config) {
@@ -25,9 +26,12 @@ module.exports = function(RED) {
 
         node.startLocalServer = function() {
             if (!server) {
+                // Extract port from redirectUri
+                const parsedUrl = new URL(node.redirectUri);
+                const port = parsedUrl.port || (parsedUrl.protocol === 'https:' ? 443 : 80);
                 server = http.createServer(app);
-                server.listen(1880, () => {
-                    node.log("Local server running on port 1880 for OAuth2 callback");
+                server.listen(port, () => {
+                    node.log(`Local server running on port ${port} for OAuth2 callback`);
 
                     const authorizationURL = `${node.authURL}?response_type=code&client_id=${node.clientId}&redirect_uri=${encodeURIComponent(node.redirectUri)}&scope=${encodeURIComponent(node.scopes)}&response_mode=query`;
                     open(authorizationURL).then(() => {
@@ -39,26 +43,22 @@ module.exports = function(RED) {
 
                 app.get('/oauth2/callback', async (req, res) => {
                     const code = req.query.code;
-                
+
                     if (!code) {
                         return res.status(400).send("Authorization code not found in the callback");
                     }
-                
+
                     try {
                         accessToken = await exchangeCodeForToken(code);
-                        // Send success response
                         res.send('<h3>Authorization successful! You can close this window.</h3>');
-                        // Emit the 'token_ready' event
                         node.events.emit('token_ready', accessToken);
                     } catch (error) {
-                        // Log the error and send failure response
                         node.error("Token exchange failed", error);
                         if (!res.headersSent) {
                             res.status(500).send("Token exchange failed");
                         }
                     }
                 });
-                
             }
         };
 
