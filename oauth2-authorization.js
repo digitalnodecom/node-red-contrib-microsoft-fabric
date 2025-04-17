@@ -17,87 +17,109 @@ module.exports = function(RED) {
         node.clientSecret = config.clientSecret;
         node.authURL = config.authURL;
         node.tokenURL = config.tokenURL;
-        node.redirectUri = config.redirectUri || 'http://localhost:1880/oauth2/callback';
+        node.redirectUri = config.redirectUri || 'https://nodered-bojana.halton.node.mk/oauth2/callback';
         node.scopes = config.scopes;
 
+        node.log(`OAuth2 node initialized with redirectUri: ${node.redirectUri}`);
+
         let accessToken = null;
-        let app = express();
-        let server;
+        
+        // Register the callback endpoint with Node-RED
+        const parsedUrl = new URL(node.redirectUri);
+        const callbackPath = parsedUrl.pathname;
+        
+        node.log(`Registering OAuth2 callback handler at path: ${callbackPath}`);
+        
+        // Setup the HTTP route handler for the callback using Node-RED's built-in HTTP server
+        RED.httpNode.get(callbackPath, async function(req, res) {
+            node.log("OAuth2 callback received!");
+            node.log(`Query parameters: ${JSON.stringify(req.query)}`);
+            
+            const code = req.query.code;
+
+            if (!code) {
+                node.error("Authorization code not found in the callback");
+                return res.status(400).send("Authorization code not found in the callback");
+            }
+
+            node.log(`Authorization code received: ${code.substring(0, 5)}...`);
+
+            try {
+                node.log("Starting token exchange process...");
+                accessToken = await exchangeCodeForToken(code);
+                node.log("Access token obtained successfully!");
+                res.send('<h3>Authorization successful! You can close this window.</h3>');
+                node.events.emit('token_ready', accessToken);
+            } catch (error) {
+                node.error("Token exchange failed", error);
+                node.error(`Error details: ${JSON.stringify(error.response?.data || {})}`);
+                if (!res.headersSent) {
+                    res.status(500).send("Token exchange failed");
+                }
+            }
+        });
 
         node.startLocalServer = function() {
-            if (!server) {
-                // Extract port from redirectUri
-                const parsedUrl = new URL(node.redirectUri);
-                const port = parsedUrl.port || (parsedUrl.protocol === 'https:' ? 443 : 80);
-                server = http.createServer(app);
-                server.listen(port, () => {
-                    node.log(`Local server running on port ${port} for OAuth2 callback`);
-
-                    const authorizationURL = `${node.authURL}?response_type=code&client_id=${node.clientId}&redirect_uri=${encodeURIComponent(node.redirectUri)}&scope=${encodeURIComponent(node.scopes)}&response_mode=query`;
-                    open(authorizationURL).then(() => {
-                        node.log("Browser opened to start OAuth2 authorization.");
-                    }).catch((error) => {
-                        node.error("Failed to open browser for OAuth2 authorization", error);
-                    });
-                });
-
-                app.get('/oauth2/callback', async (req, res) => {
-                    const code = req.query.code;
-
-                    if (!code) {
-                        return res.status(400).send("Authorization code not found in the callback");
-                    }
-
-                    try {
-                        accessToken = await exchangeCodeForToken(code);
-                        res.send('<h3>Authorization successful! You can close this window.</h3>');
-                        node.events.emit('token_ready', accessToken);
-                    } catch (error) {
-                        node.error("Token exchange failed", error);
-                        if (!res.headersSent) {
-                            res.status(500).send("Token exchange failed");
-                        }
-                    }
-                });
-            }
+            node.log("startLocalServer method called - opening authorization URL directly");
+            
+            // Instead of starting a local server, we'll just open the authorization URL
+            const authorizationURL = `${node.authURL}?response_type=code&client_id=${node.clientId}&redirect_uri=${encodeURIComponent(node.redirectUri)}&scope=${encodeURIComponent(node.scopes)}&response_mode=query`;
+            
+            node.log(`Authorization URL: ${authorizationURL}`);
+            
+            open(authorizationURL).then(() => {
+                node.log("Browser opened to start OAuth2 authorization.");
+            }).catch((error) => {
+                node.error("Failed to open browser for OAuth2 authorization", error);
+                node.error(`Open error details: ${error.message}`);
+            });
         };
 
         async function exchangeCodeForToken(code) {
             try {
-                const response = await axios.post(node.tokenURL, new URLSearchParams({
+                node.log("Preparing token exchange request...");
+                
+                const tokenRequestParams = {
                     grant_type: 'authorization_code',
                     code: code,
                     redirect_uri: node.redirectUri,
                     client_id: node.clientId,
                     client_secret: node.clientSecret,
                     scope: node.scopes
-                }), {
+                };
+                
+                node.log(`Token URL: ${node.tokenURL}`);
+                node.log(`Token request parameters: ${JSON.stringify({
+                    ...tokenRequestParams,
+                    client_secret: "****" // Hide actual secret in logs
+                })}`);
+                
+                const response = await axios.post(node.tokenURL, new URLSearchParams(tokenRequestParams), {
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
                 });
+                
+                node.log("Token exchange successful");
+                node.log(`Response status: ${response.status}`);
+                node.log(`Response contains access_token: ${!!response.data.access_token}`);
+                
                 return response.data.access_token;
             } catch (error) {
+                node.error(`Token exchange failed: ${error.message}`);
+                if (error.response) {
+                    node.error(`Response status: ${error.response.status}`);
+                    node.error(`Response data: ${JSON.stringify(error.response.data)}`);
+                }
                 throw new Error('Failed to exchange code for token: ' + error.message);
             }
         }
 
         node.getAccessToken = function() {
+            node.log(`getAccessToken called, token exists: ${!!accessToken}`);
             return accessToken;
         };
 
-        node.on('http_request_completed', function() {
-            if (server) {
-                server.close(() => {
-                    node.log("OAuth2 callback server closed after HTTP request completed");
-                });
-            }
-        });
-
         node.on('close', function() {
-            if (server) {
-                server.close(() => {
-                    node.log("OAuth2 callback server closed");
-                });
-            }
+            node.log("OAuth2 node closed");
         });
     }
 
