@@ -50,7 +50,8 @@ module.exports = function (RED) {
         async function handleDataAutomation(node, url, filePath, token, msg) {
             try {
                 const stats = fs.statSync(filePath);
-
+        
+                console.log("Creating file...");
                 await axios.put(url, null, {
                     params: { resource: 'file' },
                     headers: {
@@ -58,27 +59,35 @@ module.exports = function (RED) {
                         'Authorization': `Bearer ${token}`
                     }
                 });
-
+                console.log("File created.");
+        
+                console.log("Starting upload...");
                 await axios.patch(url, fs.createReadStream(filePath), {
                     params: { action: 'append', position: 0 },
                     headers: {
                         'Content-Type': 'application/octet-stream',
                         'Authorization': `Bearer ${token}`,
                         'Content-Length': stats.size
-                    }
+                    },
+                    maxContentLength: Infinity,
+                    maxBodyLength: Infinity,
                 });
-
+                console.log("Upload complete.");
+        
+                console.log("Flushing...");
                 await axios.patch(url, null, {
                     params: { action: 'flush', position: stats.size },
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
-
+                console.log("Flush complete.");
+        
                 msg.payload = { status: "Upload successful" };
                 node.send(msg);
             } catch (error) {
                 handleError(node, error, msg);
             }
         }
+        
 
         function handleError(node, error, msg) {
             let errorMessage = "An error occurred";
