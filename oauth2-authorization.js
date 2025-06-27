@@ -17,7 +17,7 @@ module.exports = function(RED) {
         node.clientSecret = config.clientSecret;
         node.authURL = config.authURL;
         node.tokenURL = config.tokenURL;
-        node.redirectUri = config.redirectUri || 'https://nodered-bojana.halton.node.mk/oauth2/callback';
+        node.redirectUri = config.redirectUri;
         node.scopes = config.scopes;
 
         node.log(`OAuth2 node initialized with redirectUri: ${node.redirectUri}`);
