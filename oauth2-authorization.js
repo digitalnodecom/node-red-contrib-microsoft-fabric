@@ -1,18 +1,15 @@
 const EventEmitter = require('events');
-const open = require('open');  // Import the 'open' package to open browser
+const open = require('open');
 const axios = require('axios');
-const express = require('express');
-const http = require('http');
-const { URL } = require('url');  // Added to parse redirectUri
+const { URL } = require('url');
 
-module.exports = function(RED) {
+module.exports = function (RED) {
     function OAuth2ConfigNode(config) {
         RED.nodes.createNode(this, config);
         const node = this;
 
         node.events = new EventEmitter();
 
-        // Configuration details
         node.clientId = config.clientId;
         node.clientSecret = config.clientSecret;
         node.authURL = config.authURL;
@@ -22,19 +19,19 @@ module.exports = function(RED) {
 
         node.log(`OAuth2 node initialized with redirectUri: ${node.redirectUri}`);
 
+        // Token state
         let accessToken = null;
-        
-        // Register the callback endpoint with Node-RED
+        let refreshToken = null;
+        let expiresIn = null;
+        let accessTokenObtainedAt = null;
+
         const parsedUrl = new URL(node.redirectUri);
         const callbackPath = parsedUrl.pathname;
-        
+
         node.log(`Registering OAuth2 callback handler at path: ${callbackPath}`);
-        
-        // Setup the HTTP route handler for the callback using Node-RED's built-in HTTP server
-        RED.httpNode.get(callbackPath, async function(req, res) {
+
+        RED.httpNode.get(callbackPath, async function (req, res) {
             node.log("OAuth2 callback received!");
-            node.log(`Query parameters: ${JSON.stringify(req.query)}`);
-            
             const code = req.query.code;
 
             if (!code) {
@@ -46,7 +43,19 @@ module.exports = function(RED) {
 
             try {
                 node.log("Starting token exchange process...");
-                accessToken = await exchangeCodeForToken(code);
+                const tokenData = await exchangeCodeForToken(code);
+
+                node.log("Token response data: " + JSON.stringify(tokenData));
+
+                // Store token data
+                accessToken = tokenData.access_token;
+                refreshToken = tokenData.refresh_token;
+                expiresIn = tokenData.expires_in;
+                accessTokenObtainedAt = Date.now();
+
+                node.log(`Access token will expire in ${expiresIn} seconds.`);
+                node.log(`refresh token${refreshToken} .`);
+
                 node.log("Access token obtained successfully!");
                 res.send('<h3>Authorization successful! You can close this window.</h3>');
                 node.events.emit('token_ready', accessToken);
@@ -59,69 +68,86 @@ module.exports = function(RED) {
             }
         });
 
-        node.startLocalServer = function() {
-            node.log("startLocalServer method called - opening authorization URL directly");
-            
-            // Instead of starting a local server, we'll just open the authorization URL
+        node.startLocalServer = function () {
+            node.log("Opening authorization URL...");
             const authorizationURL = `${node.authURL}?response_type=code&client_id=${node.clientId}&redirect_uri=${encodeURIComponent(node.redirectUri)}&scope=${encodeURIComponent(node.scopes)}&response_mode=query`;
-            
-            node.log(`Authorization URL: ${authorizationURL}`);
-            
             open(authorizationURL).then(() => {
                 node.log("Browser opened to start OAuth2 authorization.");
             }).catch((error) => {
                 node.error("Failed to open browser for OAuth2 authorization", error);
-                node.error(`Open error details: ${error.message}`);
             });
         };
 
+        node.getAccessToken = async function () {
+            const now = Date.now();
+            const tokenAge = (now - (accessTokenObtainedAt || 0)) / 1000;
+
+            if (accessToken && expiresIn && tokenAge < expiresIn - 60) {
+                node.log(`Access token is valid (${Math.round(expiresIn - tokenAge)}s left).`);
+                return accessToken;
+            }
+
+            if (refreshToken) {
+                node.log("Access token expired or near expiry. Attempting to refresh...");
+                const refreshed = await refreshAccessToken();
+                return refreshed ? accessToken : null;
+            }
+
+            node.warn("No access token available and no refresh token set.");
+            return null;
+        };
+
         async function exchangeCodeForToken(code) {
+            const params = {
+                grant_type: 'authorization_code',
+                code,
+                redirect_uri: node.redirectUri,
+                client_id: node.clientId,
+                client_secret: node.clientSecret,
+                scope: node.scopes
+            };
+
+            const response = await axios.post(node.tokenURL, new URLSearchParams(params), {
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+            });
+
+            return response.data;
+        }
+
+        async function refreshAccessToken() {
             try {
-                node.log("Preparing token exchange request...");
-                
-                const tokenRequestParams = {
-                    grant_type: 'authorization_code',
-                    code: code,
-                    redirect_uri: node.redirectUri,
+                const params = {
+                    grant_type: 'refresh_token',
+                    refresh_token: refreshToken,
                     client_id: node.clientId,
                     client_secret: node.clientSecret,
                     scope: node.scopes
                 };
-                
-                node.log(`Token URL: ${node.tokenURL}`);
-                node.log(`Token request parameters: ${JSON.stringify({
-                    ...tokenRequestParams,
-                    client_secret: "****" // Hide actual secret in logs
-                })}`);
-                
-                const response = await axios.post(node.tokenURL, new URLSearchParams(tokenRequestParams), {
+
+                const response = await axios.post(node.tokenURL, new URLSearchParams(params), {
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
                 });
-                
-                node.log("Token exchange successful");
-                node.log(`Response status: ${response.status}`);
-                node.log(`Response contains access_token: ${!!response.data.access_token}`);
-                
-                return response.data.access_token;
+
+                accessToken = response.data.access_token;
+                refreshToken = response.data.refresh_token || refreshToken;
+                expiresIn = response.data.expires_in;
+                accessTokenObtainedAt = Date.now();
+
+                node.log("Token refreshed successfully.");
+                return true;
             } catch (error) {
-                node.error(`Token exchange failed: ${error.message}`);
+                node.error("Failed to refresh token", error);
                 if (error.response) {
-                    node.error(`Response status: ${error.response.status}`);
-                    node.error(`Response data: ${JSON.stringify(error.response.data)}`);
+                    node.error(`Response: ${JSON.stringify(error.response.data)}`);
                 }
-                throw new Error('Failed to exchange code for token: ' + error.message);
+                return false;
             }
         }
 
-        node.getAccessToken = function() {
-            node.log(`getAccessToken called, token exists: ${!!accessToken}`);
-            return accessToken;
-        };
-
-        node.on('close', function() {
+        node.on('close', function () {
             node.log("OAuth2 node closed");
         });
     }
 
-    RED.nodes.registerType("oauth2-authorization", OAuth2ConfigNode);
+RED.nodes.registerType("oauth2-authorization", OAuth2ConfigNode);
 };

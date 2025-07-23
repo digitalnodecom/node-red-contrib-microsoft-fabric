@@ -84,7 +84,10 @@
         headerRow.style.display = "block";
         delimiter.style.display = "block";
         tableName.style.display = "block";
-    } else {
+    } else if (formatTypeElement.value === "parquet" && actionElement.value ==="upload") {
+        tableName.style.display = "block";
+    }
+        else {
         headerRow.style.display = "none";
         delimiter.style.display = "none";
         tableName.style.display = "none";

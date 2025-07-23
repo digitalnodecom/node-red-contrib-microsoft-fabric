@@ -16,7 +16,7 @@ module.exports = function (RED) {
                 return node.error("OAuth2 configuration is required");
             }
 
-            let accessToken = node.oauth2Config.getAccessToken();
+let accessToken = await node.oauth2Config.getAccessToken();
 
             if (!accessToken) {
                 node.log("No access token found. Starting local OAuth2 server...");
@@ -35,17 +35,34 @@ module.exports = function (RED) {
             }
         });
 
-        async function executeAction(token, msg) {
+            
+            async function executeAction(token, msg) {
             const url = msg.payload.url || config.url;
             const filePath = msg.payload.filePath || config.filePath;
 
             if (!url || !filePath) {
-                return node.error("Both URL and File Path are required");
+                node.error("Missing URL or filePath for upload.", msg);
+                return;
             }
 
-            await handleDataAutomation(node, url, filePath, token, msg);
-
+            try {
+                await handleDataAutomation(node, url, filePath, token, msg);
+            } catch (error) {
+                if (error.response && error.response.status === 401) {
+                    node.warn("Access token likely expired. Attempting refresh...");
+                    const newToken = await node.oauth2Config.getAccessToken();
+                    if (newToken && newToken !== token) {
+                        await handleDataAutomation(node, url, filePath, newToken, msg);
+                    } else {
+                        node.error("Retry failed: Token refresh unsuccessful.", msg);
+                    }
+                } else {
+                    handleError(node, error, msg);
+                }
+            }
         }
+
+       
 
         async function handleDataAutomation(node, url, filePath, token, msg) {
             try {

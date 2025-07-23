@@ -14,7 +14,7 @@ module.exports = function (RED) {
         }
 
         node.on('input', async function (msg) {
-            let accessToken = node.oauth2Config.getAccessToken();
+            let accessToken = await node.oauth2Config.getAccessToken();
 
             if (!accessToken) {
                 node.log("No access token found. Starting local OAuth2 server...");
