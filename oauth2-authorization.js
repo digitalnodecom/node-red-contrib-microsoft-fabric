@@ -66,10 +66,13 @@ module.exports = function (RED) {
         node.startLocalServer = function () {
             node.log("Opening authorization URL...");
             const authorizationURL = `${node.authURL}?response_type=code&client_id=${node.clientId}&redirect_uri=${encodeURIComponent(node.redirectUri)}&scope=${encodeURIComponent(node.scopes)}&response_mode=query`;
+            node.log(`Authorization URL: ${authorizationURL}`);
             open(authorizationURL).then(() => {
                 node.log("Browser opened to start OAuth2 authorization.");
             }).catch((error) => {
                 node.error("Failed to open browser for OAuth2 authorization", error);
+                node.error(`Open error details: ${error.message}`);
+
             });
         };
 
