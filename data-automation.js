@@ -16,7 +16,7 @@ module.exports = function (RED) {
                 return node.error("OAuth2 configuration is required");
             }
 
-let accessToken = await node.oauth2Config.getAccessToken();
+            let accessToken = await node.oauth2Config.getAccessToken();
 
             if (!accessToken) {
                 node.log("No access token found. Starting local OAuth2 server...");

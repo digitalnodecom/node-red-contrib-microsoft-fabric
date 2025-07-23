@@ -19,7 +19,6 @@ module.exports = function (RED) {
 
         node.log(`OAuth2 node initialized with redirectUri: ${node.redirectUri}`);
 
-        // Token state
         let accessToken = null;
         let refreshToken = null;
         let expiresIn = null;
@@ -28,18 +27,14 @@ module.exports = function (RED) {
         const parsedUrl = new URL(node.redirectUri);
         const callbackPath = parsedUrl.pathname;
 
-        node.log(`Registering OAuth2 callback handler at path: ${callbackPath}`);
 
         RED.httpNode.get(callbackPath, async function (req, res) {
-            node.log("OAuth2 callback received!");
             const code = req.query.code;
 
             if (!code) {
                 node.error("Authorization code not found in the callback");
                 return res.status(400).send("Authorization code not found in the callback");
             }
-
-            node.log(`Authorization code received: ${code.substring(0, 5)}...`);
 
             try {
                 node.log("Starting token exchange process...");
