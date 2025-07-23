@@ -1,6 +1,6 @@
 {
   "name": "@digitalnodecom/node-red-contrib-microsoft-fabric",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "author": "Bojana Taseva",
   "license": "ISC",
   "description": "Node-Red nodes for OAuth2 authorization and microsoft fabric",
